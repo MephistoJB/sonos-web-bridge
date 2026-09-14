@@ -54,8 +54,7 @@ The media source currently supports:
 - Browsing Sonos library containers such as titles, albums, artists, and playlists where Sonos exposes them.
 - Paginating through large library containers.
 - Searching Apple Music through Sonos.
-
-Playback is intentionally not exposed through the media source yet. Sonos Web returns Sonos content objects instead of direct stream URLs, so playback needs a verified Sonos queue/play path before tracks are marked as playable.
+- Playing library tracks on Home Assistant Sonos media players by resolving Sonos content IDs to Sonos playback URIs.
 
 ## Services
 
@@ -65,6 +64,9 @@ Playback is intentionally not exposed through the media source yet. Sonos Web re
 - `sonos_web_bridge.search`
 - `sonos_web_bridge.library_tracks`
 - `sonos_web_bridge.library_resources`
+- `sonos_web_bridge.play_media`
+
+`sonos_web_bridge.play_media` accepts a Home Assistant Sonos `media_player` entity and a Sonos Web Bridge track id, including a full `media-source://sonos_web_bridge/track/...` id from the media browser.
 
 ## Session Refresh
 
@@ -89,6 +91,6 @@ The custom card should call this integration through Home Assistant's authentica
 /api/sonos_web_bridge/library/tracks?offset=0&count=100
 ```
 
-The frontend should not store Sonos credentials or session cookies.
+For playback, call the Home Assistant service `sonos_web_bridge.play_media` with the selected player entity and the selected media source track id. The frontend should not store Sonos credentials or session cookies.
 
 For a Home Assistant-native browsing experience, prefer the `Sonos Web Bridge` media source in the Home Assistant Media Browser.

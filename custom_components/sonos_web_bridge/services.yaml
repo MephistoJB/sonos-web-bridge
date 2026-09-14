@@ -81,3 +81,16 @@ library_resources:
           min: 1
           max: 500
           mode: box
+
+play_media:
+  target: {}
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          domain: media_player
+    media_content_id:
+      required: true
+      selector:
+        text:

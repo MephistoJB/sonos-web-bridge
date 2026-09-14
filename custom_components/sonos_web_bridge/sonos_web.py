@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, unquote, urljoin
 
 from aiohttp import ClientResponse, ClientSession
 from yarl import URL
@@ -16,6 +16,8 @@ from yarl import URL
 from .const import PLAY_SONOS_BASE, PLAY_SONOS_WEB_APP
 
 _LOGGER = logging.getLogger(__name__)
+
+APPLE_MUSIC_LEGACY_SID = "204"
 
 
 @dataclass
@@ -163,6 +165,11 @@ class SonosWebClient:
         await self._ensure_discovered()
         path = _library_resource_path(self.state.household_id, self.state.service_id, self.state.account_id, object_id, offset, count)
         return await self.sonos_get(path)
+
+    async def playback_uri(self, media_content_id: str) -> str:
+        """Return a Sonos playback URI for a Sonos content media id."""
+        await self._ensure_discovered()
+        return _playback_uri(media_content_id, self.state.account_id)
 
     async def sonos_get(self, path: str) -> Any:
         """GET JSON from play.sonos.com with the stored session."""
@@ -334,6 +341,40 @@ def _collection_for_object_id(object_id: str) -> str:
 
 def _normalized_object_id(object_id: str) -> str:
     return object_id.replace("%3A", ":").replace("%3a", ":")
+
+
+def _playback_uri(media_content_id: str, account_id: str) -> str:
+    object_id = _track_object_id(media_content_id)
+    encoded_object_id = quote(object_id, safe=".").replace("%3A", "%3a")
+    return f"x-sonos-http:{encoded_object_id}.mp4?sid={APPLE_MUSIC_LEGACY_SID}&flags=8232&sn={account_id}"
+
+
+def _track_object_id(media_content_id: str) -> str:
+    value = media_content_id.strip()
+    if value.startswith("media-source://"):
+        value = value.rsplit("/", 1)[-1]
+    value = _decode_quoted(value)
+    if value.startswith("track/"):
+        value = value.removeprefix("track/")
+    value = _decode_quoted(value)
+    if value.startswith("srn:content:audio:track:"):
+        value = value.removeprefix("srn:content:audio:track:").split("#", 1)[0]
+    value = _decode_quoted(value)
+    if not value:
+        raise RuntimeError("Missing Sonos track id")
+    if not value.startswith("librarytrack:"):
+        raise RuntimeError(f"Unsupported Sonos media id for playback: {value.split(':', 1)[0]}")
+    return value
+
+
+def _decode_quoted(value: str) -> str:
+    previous = value
+    for _ in range(3):
+        decoded = _normalized_object_id(unquote(previous))
+        if decoded == previous:
+            return decoded
+        previous = decoded
+    return previous
 
 
 def _extract_jsonish_value(text: str, key: str) -> str:

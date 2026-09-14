@@ -14,6 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 
@@ -52,6 +53,12 @@ LIBRARY_RESOURCES_SCHEMA = vol.Schema(
         vol.Required("object_id"): str,
         vol.Optional("offset", default=0): vol.All(int, vol.Range(min=0)),
         vol.Optional("count", default=100): vol.All(int, vol.Range(min=1, max=500)),
+    }
+)
+PLAY_MEDIA_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Required("media_content_id"): str,
     }
 )
 
@@ -157,6 +164,34 @@ class SonosWebBridgeRuntime:
             await self.async_refresh(force=True)
             return await self.client.library_resources(object_id, offset, count)
 
+    async def async_resolve_playback_uri(self, media_content_id: str) -> str:
+        """Resolve a Sonos content id to a Sonos playback URI."""
+        try:
+            return await self.client.playback_uri(media_content_id)
+        except Exception:
+            await self.async_refresh(force=True)
+            return await self.client.playback_uri(media_content_id)
+
+    async def async_play_media(self, entity_id: str, media_content_id: str) -> dict[str, Any]:
+        """Play a Sonos content id on a Home Assistant Sonos media player."""
+        playback_uri = await self.async_resolve_playback_uri(media_content_id)
+        await self.hass.services.async_call(
+            "media_player",
+            "play_media",
+            {
+                "entity_id": entity_id,
+                "media_content_id": playback_uri,
+                "media_content_type": "music",
+            },
+            blocking=True,
+        )
+        state = self.hass.states.get(entity_id)
+        return {
+            "entity_id": entity_id,
+            "state": state.state if state else None,
+            "media_content_id": playback_uri,
+        }
+
     def status(self) -> dict[str, Any]:
         """Return non-secret status."""
         return self.client.status()
@@ -224,6 +259,9 @@ def _register_services_once(hass: HomeAssistant) -> None:
     async def library_resources(call: ServiceCall) -> dict[str, Any]:
         return await _runtime(hass).async_library_resources(call.data["object_id"], call.data["offset"], call.data["count"])
 
+    async def play_media(call: ServiceCall) -> dict[str, Any]:
+        return await _runtime(hass).async_play_media(call.data["entity_id"], call.data["media_content_id"])
+
     hass.services.async_register(DOMAIN, "login", login, schema=LOGIN_SCHEMA, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "refresh", refresh, schema=REFRESH_SCHEMA, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "discover", discover, supports_response=SupportsResponse.ONLY)
@@ -236,6 +274,7 @@ def _register_services_once(hass: HomeAssistant) -> None:
         schema=LIBRARY_RESOURCES_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
+    hass.services.async_register(DOMAIN, "play_media", play_media, schema=PLAY_MEDIA_SCHEMA, supports_response=SupportsResponse.ONLY)
 
 
 class _BaseView(HomeAssistantView):

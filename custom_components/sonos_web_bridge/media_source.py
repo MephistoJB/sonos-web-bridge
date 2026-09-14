@@ -71,7 +71,11 @@ class SonosWebBridgeMediaSource(MediaSource):
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media for playback."""
-        raise Unresolvable("Sonos Web Bridge playback is not implemented yet")
+        identifier = item.identifier or ""
+        if not identifier.startswith("track/"):
+            raise Unresolvable("Only Sonos Web Bridge tracks can be played")
+        runtime = async_get_runtime(self.hass)
+        return PlayMedia(await runtime.async_resolve_playback_uri(identifier), "audio/aac")
 
     def _root(self) -> BrowseMediaSource:
         return BrowseMediaSource(
@@ -252,7 +256,7 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
         media_class=media_class,
         media_content_type=MediaType.MUSIC,
         title=title,
-        can_play=False,
+        can_play=media_class == MediaClass.TRACK,
         can_expand=can_expand,
         thumbnail=_thumbnail(item),
     )
