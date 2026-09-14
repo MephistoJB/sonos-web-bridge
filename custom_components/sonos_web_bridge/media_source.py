@@ -46,10 +46,10 @@ APPLE_MUSIC_CATEGORY_THUMBNAILS = {
     "On the Air 24/7": "apple_music_onair.png",
     "Radio Shows": "apple_music_radio_shows.png",
     "Stations by Genre": "apple_music_stations.png",
-    "Titel": "apple_music_tracks.png",
-    "Alben": "apple_music_albums.png",
-    "Kuenstler": "apple_music_artists.png",
-    "Playlists": "apple_music_playlists.png",
+    "Titel": "apple_music_library.png",
+    "Alben": "apple_music_library.png",
+    "Kuenstler": "apple_music_library.png",
+    "Playlists": "apple_music_library.png",
 }
 
 
@@ -213,7 +213,6 @@ class SonosWebBridgeMediaSource(MediaSource):
             search_media_classes=[MediaClass.TRACK, MediaClass.ARTIST, MediaClass.ALBUM, MediaClass.PLAYLIST],
             children_media_class=_children_media_class(items),
             children=items,
-            not_shown=max(total - next_offset, 0),
             thumbnail=APPLE_MUSIC_THUMBNAIL,
         )
 
@@ -281,7 +280,7 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
         domain=DOMAIN,
         identifier=_resource_identifier(object_id, 0, title) if can_expand else f"track/{quote(playable_id, safe='')}",
         media_class=media_class,
-        media_content_type=MediaType.MUSIC,
+        media_content_type="audio/aac" if media_class == MediaClass.TRACK else MediaType.MUSIC,
         title=title,
         can_play=media_class == MediaClass.TRACK,
         can_expand=can_expand,
