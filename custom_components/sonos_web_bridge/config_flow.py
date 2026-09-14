@@ -7,6 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
 
 from .const import (
     CONF_PSONO_BEARER_TOKEN,
@@ -41,7 +42,9 @@ class SonosWebBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = vol.Schema(
             {
                 vol.Required(CONF_PSONO_MCP_URL, default=DEFAULT_PSONO_MCP_URL): str,
-                vol.Optional(CONF_PSONO_BEARER_TOKEN, default=""): str,
+                vol.Optional(CONF_PSONO_BEARER_TOKEN, default=""): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
                 vol.Optional(CONF_PSONO_BEARER_TOKEN_FILE, default=""): str,
                 vol.Required(CONF_SONOS_EMAIL_KEY, default=DEFAULT_SONOS_EMAIL_KEY): str,
                 vol.Required(CONF_SONOS_PASSWORD_KEY, default=DEFAULT_SONOS_PASSWORD_KEY): str,
@@ -50,4 +53,3 @@ class SonosWebBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema)
-
