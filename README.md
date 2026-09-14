@@ -19,25 +19,18 @@ Experimental. The Sonos Web API used here is not the public Sonos Control API an
 
 ## Configuration
 
-The integration can read Sonos credentials from a Psono MCP server or accept credentials through the `sonos_web_bridge.login` service and `/api/sonos_web_bridge/login` endpoint.
-
-Recommended Psono keys:
-
-- `SONOS_ACCOUNT_EMAIL`
-- `SONOS_ACCOUNT_PASSWORD`
-
-Recommended local configuration for Codex/Home Assistant hosts with an existing Psono MCP token file:
+The integration asks for the Sonos account credentials during setup:
 
 ```text
-Psono MCP URL: http://192.168.1.151:8091/mcp
-Psono bearer token file: /config/secrets/psono_mcp_bearer_token
-Sonos email key: SONOS_ACCOUNT_EMAIL
-Sonos password key: SONOS_ACCOUNT_PASSWORD
+Sonos email: your Sonos account email
+Sonos password: your Sonos account password
 Refresh interval: 24 hours
 Refresh threshold: 48 hours
 ```
 
-The bearer token value itself should not be stored in Lovelace YAML or exposed to the frontend.
+The password is entered through a Home Assistant password selector. It is used only by the backend integration for the browserless Sonos Web login and refresh.
+
+Psono-backed credential lookup remains available as a fallback for existing local test setups, but it is not the normal installation path.
 
 ## API
 

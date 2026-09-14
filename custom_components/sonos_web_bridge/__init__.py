@@ -23,7 +23,9 @@ from .const import (
     CONF_PSONO_MCP_URL,
     CONF_REFRESH_INTERVAL_HOURS,
     CONF_REFRESH_THRESHOLD_HOURS,
+    CONF_SONOS_EMAIL,
     CONF_SONOS_EMAIL_KEY,
+    CONF_SONOS_PASSWORD,
     CONF_SONOS_PASSWORD_KEY,
     DEFAULT_REFRESH_INTERVAL_HOURS,
     DEFAULT_REFRESH_THRESHOLD_HOURS,
@@ -86,7 +88,8 @@ class SonosWebBridgeRuntime:
 
     async def async_start(self) -> None:
         """Start periodic refresh."""
-        interval_hours = int(self.entry.data.get(CONF_REFRESH_INTERVAL_HOURS, DEFAULT_REFRESH_INTERVAL_HOURS))
+        config = self._config
+        interval_hours = int(config.get(CONF_REFRESH_INTERVAL_HOURS, DEFAULT_REFRESH_INTERVAL_HOURS))
         self._unsub_refresh = async_track_time_interval(self.hass, self._scheduled_refresh, timedelta(hours=interval_hours))
         await self.async_refresh(force=False)
 
@@ -106,7 +109,8 @@ class SonosWebBridgeRuntime:
 
     async def async_refresh(self, force: bool = False) -> dict[str, Any]:
         """Refresh the session if needed."""
-        threshold_hours = int(self.entry.data.get(CONF_REFRESH_THRESHOLD_HOURS, DEFAULT_REFRESH_THRESHOLD_HOURS))
+        config = self._config
+        threshold_hours = int(config.get(CONF_REFRESH_THRESHOLD_HOURS, DEFAULT_REFRESH_THRESHOLD_HOURS))
         if not force and not self.client.needs_refresh(threshold_hours * 3600):
             return self.client.status()
         try:
@@ -148,20 +152,29 @@ class SonosWebBridgeRuntime:
     async def _scheduled_refresh(self, _now) -> None:
         await self.async_refresh(force=False)
 
+    @property
+    def _config(self) -> dict[str, Any]:
+        return {**self.entry.data, **self.entry.options}
+
     async def _credentials(self, email: str | None, password: str | None) -> tuple[str, str]:
         if email and password:
             return email, password
+        config = self._config
+        stored_email = str(config.get(CONF_SONOS_EMAIL, "")).strip()
+        stored_password = str(config.get(CONF_SONOS_PASSWORD, ""))
+        if stored_email and stored_password:
+            return stored_email, stored_password
         psono = await PsonoClient.async_from_config(
             self.hass,
             async_get_clientsession(self.hass),
-            str(self.entry.data.get(CONF_PSONO_MCP_URL, "")),
-            str(self.entry.data.get(CONF_PSONO_BEARER_TOKEN, "")),
-            str(self.entry.data.get(CONF_PSONO_BEARER_TOKEN_FILE, "")),
+            str(config.get(CONF_PSONO_MCP_URL, "")),
+            str(config.get(CONF_PSONO_BEARER_TOKEN, "")),
+            str(config.get(CONF_PSONO_BEARER_TOKEN_FILE, "")),
         )
         if not psono:
-            raise RuntimeError("No Sonos credentials supplied and Psono is not configured")
-        email_key = str(self.entry.data[CONF_SONOS_EMAIL_KEY])
-        password_key = str(self.entry.data[CONF_SONOS_PASSWORD_KEY])
+            raise RuntimeError("No Sonos credentials configured")
+        email_key = str(config[CONF_SONOS_EMAIL_KEY])
+        password_key = str(config[CONF_SONOS_PASSWORD_KEY])
         return await psono.get_secret(email_key), await psono.get_secret(password_key)
 
 

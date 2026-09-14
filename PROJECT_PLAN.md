@@ -11,7 +11,8 @@ The bridge must not use MusicKit, the Apple Music API, Music Assistant, Sonos fa
 - Public GitHub repository: `MephistoJB/sonos-web-bridge`
 - HACS custom integration layout
 - Home Assistant config flow
-- Psono-backed Sonos credential lookup
+- Sonos credential setup in the Home Assistant integration
+- Optional Psono-backed credential lookup for existing local test setups
 - Browserless Sonos Web login
 - Periodic session refresh inside Home Assistant
 - Home Assistant services and authenticated HTTP endpoints for:
@@ -25,8 +26,8 @@ The bridge must not use MusicKit, the Apple Music API, Music Assistant, Sonos fa
 
 - HACS installs the integration.
 - Home Assistant loads the config entry.
-- Psono token is read from `/config/secrets/psono_mcp_bearer_token`.
 - Sonos Web login works without Apple API credentials.
+- Psono fallback was proven from `/config/secrets/psono_mcp_bearer_token` during local testing.
 - Apple Music registration is discovered through Sonos:
   - `serviceId`: `52231`
   - `accountId`: `5`
@@ -39,7 +40,8 @@ The bridge must not use MusicKit, the Apple Music API, Music Assistant, Sonos fa
 Wire the custom Sonos card to this bridge:
 
 - Show a Sonos Login button only when `/api/sonos_web_bridge/status` is unauthenticated.
-- Submit credentials to `/api/sonos_web_bridge/login` only when Psono-backed refresh is unavailable.
+- Prefer the Home Assistant integration setup credentials for login and refresh.
+- Submit credentials to `/api/sonos_web_bridge/login` only as a manual fallback.
 - List library tracks from `/api/sonos_web_bridge/library/tracks`.
 - Search via `/api/sonos_web_bridge/search`.
 - Keep credentials and cookies out of Lovelace config and browser storage.
@@ -56,3 +58,4 @@ The bridge currently returns Sonos content objects with `ACTION_PLAY`. The next 
 - `v0.1.1`: Mask Psono bearer token input in the config flow.
 - `v0.1.2`: Read token file outside the HA event loop and accept JSON array responses.
 - `v0.1.3`: Handle Sonos discovery arrays consistently.
+- `v0.1.4`: Ask for Sonos credentials in the Home Assistant integration setup.
