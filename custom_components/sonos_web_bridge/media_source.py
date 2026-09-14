@@ -26,7 +26,7 @@ SEARCH = "search"
 PAGE_SIZE = 48
 SONOS_THUMBNAIL = "/api/sonos_web_bridge/icon.svg"
 APPLE_MUSIC_THUMBNAIL = "/api/sonos_web_bridge/apple_music_logo.png?v=4"
-THUMBNAIL_VERSION = "5"
+THUMBNAIL_VERSION = "6"
 
 LIBRARY_FOLDERS = (
     ("Titel", "libraryfolder:f.3", MediaClass.TRACK),
