@@ -27,6 +27,9 @@ PAGE_SIZE = 48
 SONOS_THUMBNAIL = "/api/sonos_web_bridge/icon.svg"
 APPLE_MUSIC_THUMBNAIL = "/api/sonos_web_bridge/apple_music_logo.png?v=4"
 THUMBNAIL_VERSION = "7"
+TITLE_OVERRIDES = {
+    "Library": "Apple Music Library",
+}
 
 LIBRARY_FOLDERS = (
     ("Titel", "libraryfolder:f.3", MediaClass.TRACK),
@@ -36,8 +39,8 @@ LIBRARY_FOLDERS = (
 )
 
 APPLE_MUSIC_CATEGORY_THUMBNAILS = {
-    "Mediathek": "apple_music_mediathek.png",
-    "Library": "apple_music_library.png",
+    "Personal Mediathek": "apple_music_mediathek.png",
+    "Apple Music Library": "apple_music_library.png",
     "Browse Our Picks": "apple_music_picks.png",
     "Featured Playlists": "apple_music_playlists.png",
     "Now in Spatial Audio": "apple_music_spatial.png",
@@ -147,12 +150,12 @@ class SonosWebBridgeMediaSource(MediaSource):
                     identifier=LIBRARY,
                     media_class=MediaClass.DIRECTORY,
                     media_content_type=MediaType.MUSIC,
-                    title="Mediathek",
+                    title="Personal Mediathek",
                     can_play=False,
                     can_expand=True,
                     can_search=True,
                     search_media_classes=[MediaClass.TRACK, MediaClass.ARTIST, MediaClass.ALBUM, MediaClass.PLAYLIST],
-                    thumbnail=_category_thumbnail("Mediathek"),
+                    thumbnail=_category_thumbnail("Personal Mediathek"),
                 )
             ]
             + [_resource_item(resource) for resource in root_items],
@@ -165,7 +168,7 @@ class SonosWebBridgeMediaSource(MediaSource):
             identifier=LIBRARY,
             media_class=MediaClass.DIRECTORY,
             media_content_type=MediaType.MUSIC,
-            title="Mediathek",
+            title="Personal Mediathek",
             can_play=False,
             can_expand=True,
             can_search=True,
@@ -206,7 +209,7 @@ class SonosWebBridgeMediaSource(MediaSource):
             identifier=_resource_identifier(object_id, offset, label),
             media_class=MediaClass.DIRECTORY,
             media_content_type=MediaType.MUSIC,
-            title=label or "Mediathek",
+            title=label or "Personal Mediathek",
             can_play=False,
             can_expand=True,
             can_search=True,
@@ -274,7 +277,7 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
     object_id = _object_id(item)
     media_class = _media_class(item)
     can_expand = media_class != MediaClass.TRACK and bool(object_id)
-    title = _title(item)
+    title = _display_title(_title(item))
     playable_id = object_id or str(item.get("id") or title)
     return BrowseMediaSource(
         domain=DOMAIN,
@@ -333,6 +336,11 @@ def _resources_from_payload(payload: dict[str, Any]) -> tuple[list[dict[str, Any
         if all_items:
             return all_items, total or len(all_items)
 
+    section = payload.get("section")
+    if isinstance(section, dict) and isinstance(section.get("items"), list):
+        items = section["items"]
+        return items, int(section.get("total") or len(items))
+
     return [], 0
 
 
@@ -370,6 +378,10 @@ def _title(item: dict[str, Any]) -> str:
     if subtitle and _media_class(item) == MediaClass.TRACK:
         return f"{title} - {subtitle}"
     return title
+
+
+def _display_title(title: str) -> str:
+    return TITLE_OVERRIDES.get(title, title)
 
 
 def _artist_summary(item: dict[str, Any]) -> str:
