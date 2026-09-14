@@ -25,7 +25,7 @@ RESOURCE = "apple_music/library/resource"
 SEARCH = "search"
 PAGE_SIZE = 48
 SONOS_THUMBNAIL = "/api/sonos_web_bridge/icon.svg"
-APPLE_MUSIC_THUMBNAIL = "/api/sonos_web_bridge/apple_music_logo.png?v=2"
+APPLE_MUSIC_THUMBNAIL = "/api/sonos_web_bridge/apple_music_logo.png?v=4"
 
 LIBRARY_FOLDERS = (
     ("Titel", "libraryfolder:f.3", MediaClass.TRACK),
