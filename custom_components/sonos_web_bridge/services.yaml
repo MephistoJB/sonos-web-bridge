@@ -1,0 +1,61 @@
+login:
+  target: {}
+  fields:
+    email:
+      required: false
+      selector:
+        text:
+    password:
+      required: false
+      selector:
+        text:
+          type: password
+
+refresh:
+  target: {}
+  fields:
+    force:
+      required: false
+      default: false
+      selector:
+        boolean:
+
+discover:
+  target: {}
+  fields: {}
+
+search:
+  target: {}
+  fields:
+    query:
+      required: true
+      selector:
+        text:
+    count:
+      required: false
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box
+
+library_tracks:
+  target: {}
+  fields:
+    offset:
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          mode: box
+    count:
+      required: false
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box
+
