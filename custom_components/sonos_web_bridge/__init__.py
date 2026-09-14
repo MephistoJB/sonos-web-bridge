@@ -39,6 +39,12 @@ from .sonos_web import SonosWebClient, SonosWebState
 
 _LOGGER = logging.getLogger(__name__)
 
+SONOS_ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Sonos">
+<rect width="256" height="256" rx="42" fill="#111111"/>
+<path fill="#ffffff" d="M52 91h152v15H52zm0 30h152v15H52zm0 30h152v15H52z"/>
+<path fill="#ffffff" d="M67 78c13-16 34-26 61-26s48 10 61 26l-14 9c-10-12-26-19-47-19s-37 7-47 19zm122 100c-13 16-34 26-61 26s-48-10-61-26l14-9c10 12 26 19 47 19s37-7 47-19z"/>
+</svg>"""
+
 LOGIN_SCHEMA = vol.Schema({vol.Optional("email"): str, vol.Optional("password"): str})
 REFRESH_SCHEMA = vol.Schema({vol.Optional("force", default=False): bool})
 SEARCH_SCHEMA = vol.Schema({vol.Required("query"): str, vol.Optional("count", default=20): vol.All(int, vol.Range(min=1, max=100))})
@@ -79,6 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.http.register_view(SonosWebBridgeSearchView(runtime))
     hass.http.register_view(SonosWebBridgeLibraryTracksView(runtime))
     hass.http.register_view(SonosWebBridgeLibraryResourcesView(runtime))
+    hass.http.register_view(SonosWebBridgeIconView())
     return True
 
 
@@ -300,6 +307,21 @@ class SonosWebBridgeStatusView(_BaseView):
 
     async def get(self, request: web.Request) -> web.Response:
         return self.json(self.runtime.status())
+
+
+class SonosWebBridgeIconView(HomeAssistantView):
+    """Return a local Sonos icon for media source thumbnails."""
+
+    requires_auth = False
+    url = "/api/sonos_web_bridge/icon.svg"
+    name = "api:sonos_web_bridge:icon"
+
+    async def get(self, request: web.Request) -> web.Response:
+        return web.Response(
+            text=SONOS_ICON_SVG,
+            content_type="image/svg+xml",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
 
 
 class SonosWebBridgeLoginView(_BaseView):

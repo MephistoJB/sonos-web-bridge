@@ -24,7 +24,7 @@ LIBRARY = "apple_music/library"
 RESOURCE = "apple_music/library/resource"
 SEARCH = "search"
 PAGE_SIZE = 48
-SONOS_THUMBNAIL = "/api/brands/integration/sonos/logo.png"
+SONOS_THUMBNAIL = "/api/sonos_web_bridge/icon.svg"
 APPLE_MUSIC_THUMBNAIL = "/api/brands/integration/apple_music/logo.png"
 
 LIBRARY_FOLDERS = (
