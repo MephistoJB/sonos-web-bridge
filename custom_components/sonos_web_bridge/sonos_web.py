@@ -161,11 +161,8 @@ class SonosWebClient:
     async def library_resources(self, object_id: str, offset: int = 0, count: int = 100) -> dict[str, Any]:
         """Browse Apple Music library resources through Sonos."""
         await self._ensure_discovered()
-        encoded_object_id = quote(object_id, safe="")
-        collection = _collection_for_object_id(object_id)
-        return await self.sonos_get(
-            f"/api/content/v2/households/{self.state.household_id}/services/{self.state.service_id}/accounts/{self.state.account_id}/{collection}/{encoded_object_id}/resources?count={count}&offset={offset}&filterExplicit=false&muse2=true"
-        )
+        path = _library_resource_path(self.state.household_id, self.state.service_id, self.state.account_id, object_id, offset, count)
+        return await self.sonos_get(path)
 
     async def sonos_get(self, path: str) -> Any:
         """GET JSON from play.sonos.com with the stored session."""
@@ -314,12 +311,29 @@ def _items_from_response(response: Any, collection_key: str) -> list[Any]:
     return []
 
 
+def _library_resource_path(household_id: str, service_id: str, account_id: str, object_id: str, offset: int, count: int) -> str:
+    object_id = _normalized_object_id(object_id)
+    encoded_object_id = quote(object_id, safe="")
+    base = f"/api/content/v2/households/{household_id}/services/{service_id}/accounts/{account_id}"
+    query = f"count={count}&offset={offset}&filterExplicit=false&muse2=true"
+    if object_id in {"libraryfolder:f.1", "libraryfolder:f.2", "libraryfolder:f.3", "libraryfolder:f.4"}:
+        return f"{base}/playlists/{encoded_object_id}/resources?{query}"
+    return f"{base}/{_collection_for_object_id(object_id)}/{encoded_object_id}/browse?{query}"
+
+
 def _collection_for_object_id(object_id: str) -> str:
+    object_id = _normalized_object_id(object_id)
     if object_id.startswith("libraryartist:"):
         return "artists"
     if object_id.startswith("libraryalbum:"):
         return "albums"
+    if object_id.startswith("libraryfolder:"):
+        return "containers"
     return "playlists"
+
+
+def _normalized_object_id(object_id: str) -> str:
+    return object_id.replace("%3A", ":").replace("%3a", ":")
 
 
 def _extract_jsonish_value(text: str, key: str) -> str:

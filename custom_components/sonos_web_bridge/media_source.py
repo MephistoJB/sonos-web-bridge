@@ -265,7 +265,7 @@ def _search_result_items(payload: dict[str, Any]) -> list[BrowseMedia]:
 
 def _object_id(item: dict[str, Any]) -> str:
     resource_id = item.get("resource", {}).get("id", {})
-    return str(resource_id.get("objectId") or item.get("objectId") or "")
+    return unquote(str(resource_id.get("objectId") or item.get("objectId") or ""))
 
 
 def _media_class(item: dict[str, Any]) -> MediaClass:
@@ -276,6 +276,8 @@ def _media_class(item: dict[str, Any]) -> MediaClass:
         return MediaClass.ALBUM
     if "PLAYLIST" in resource_type:
         return MediaClass.PLAYLIST
+    if "CONTAINER" in resource_type:
+        return MediaClass.DIRECTORY
     return MediaClass.TRACK
 
 

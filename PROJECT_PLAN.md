@@ -67,3 +67,4 @@ The bridge currently returns Sonos content objects with `ACTION_PLAY`. The next 
 - `v0.1.4`: Ask for Sonos credentials in the Home Assistant integration setup.
 - `v0.2.0`: Expose Sonos Apple Music library/search through Home Assistant Media Browser.
 - `v0.2.1`: Add hierarchical Apple Music media source browsing and generic Sonos library resources.
+- `v0.2.2`: Route nested Sonos library artists, albums, playlists, and containers through their browse endpoints.
