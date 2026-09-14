@@ -46,10 +46,10 @@ APPLE_MUSIC_CATEGORY_THUMBNAILS = {
     "On the Air 24/7": "apple_music_onair.png",
     "Radio Shows": "apple_music_radio_shows.png",
     "Stations by Genre": "apple_music_stations.png",
-    "Titel": "apple_music_tracks.png",
-    "Alben": "apple_music_albums.png",
-    "Kuenstler": "apple_music_artists.png",
-    "Playlists": "apple_music_playlists.png",
+    "Titel": "https://is2-ssl.mzstatic.com/image/thumb/Features112/v4/e6/a4/46/e6a4462b-6894-b200-219c-0e8086a223e6/mza_16679532839783286003.png/400x400bb.png",
+    "Alben": "https://is1-ssl.mzstatic.com/image/thumb/Features112/v4/8e/5f/dc/8e5fdc79-aac4-0619-de65-5807d7dbfc2e/mza_15349207846707241894.png/400x400bb.png",
+    "Kuenstler": "https://is4-ssl.mzstatic.com/image/thumb/Features122/v4/9d/28/8d/9d288dd3-ae05-42e8-1b4e-e15d169d302c/mza_3294545391416921357.png/400x400bb.png",
+    "Playlists": "https://is3-ssl.mzstatic.com/image/thumb/Features122/v4/e0/b8/24/e0b82419-156a-b41f-d04d-d1342bd2e1c0/mza_14496945284445616431.png/400x400bb.png",
 }
 
 
@@ -394,7 +394,9 @@ def _thumbnail(item: dict[str, Any]) -> str | None:
 
 
 def _category_thumbnail(title: str) -> str:
-    filename = APPLE_MUSIC_CATEGORY_THUMBNAILS.get(title)
-    if not filename:
+    thumbnail = APPLE_MUSIC_CATEGORY_THUMBNAILS.get(title)
+    if not thumbnail:
         return APPLE_MUSIC_THUMBNAIL
-    return f"/api/sonos_web_bridge/static/{filename}?v={THUMBNAIL_VERSION}"
+    if thumbnail.startswith(("http://", "https://", "/")):
+        return thumbnail
+    return f"/api/sonos_web_bridge/static/{thumbnail}?v={THUMBNAIL_VERSION}"
