@@ -89,6 +89,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.http.register_view(SonosWebBridgeLibraryResourcesView(runtime))
     hass.http.register_view(SonosWebBridgeIconView())
     hass.http.register_view(SonosWebBridgeAppleMusicLogoView())
+    hass.http.register_view(SonosWebBridgeStaticImageView())
     return True
 
 
@@ -339,6 +340,22 @@ class SonosWebBridgeAppleMusicLogoView(HomeAssistantView):
             _STATIC_DIR / "apple_music_logo.png",
             headers={"Cache-Control": "public, max-age=86400"},
         )
+
+
+class SonosWebBridgeStaticImageView(HomeAssistantView):
+    """Return bundled media source artwork."""
+
+    requires_auth = False
+    url = "/api/sonos_web_bridge/static/{filename}"
+    name = "api:sonos_web_bridge:static_image"
+
+    async def get(self, request: web.Request, filename: str) -> web.FileResponse:
+        if "/" in filename or not filename.endswith(".png"):
+            raise web.HTTPNotFound()
+        path = _STATIC_DIR / filename
+        if not path.is_file():
+            raise web.HTTPNotFound()
+        return web.FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})
 
 
 class SonosWebBridgeLoginView(_BaseView):

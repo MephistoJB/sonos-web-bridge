@@ -26,6 +26,7 @@ SEARCH = "search"
 PAGE_SIZE = 48
 SONOS_THUMBNAIL = "/api/sonos_web_bridge/icon.svg"
 APPLE_MUSIC_THUMBNAIL = "/api/sonos_web_bridge/apple_music_logo.png?v=4"
+THUMBNAIL_VERSION = "5"
 
 LIBRARY_FOLDERS = (
     ("Titel", "libraryfolder:f.3", MediaClass.TRACK),
@@ -33,6 +34,23 @@ LIBRARY_FOLDERS = (
     ("Kuenstler", "libraryfolder:f.1", MediaClass.ARTIST),
     ("Playlists", "libraryfolder:f.4", MediaClass.PLAYLIST),
 )
+
+APPLE_MUSIC_CATEGORY_THUMBNAILS = {
+    "Mediathek": "apple_music_mediathek.png",
+    "Library": "apple_music_library.png",
+    "Browse Our Picks": "apple_music_picks.png",
+    "Featured Playlists": "apple_music_playlists.png",
+    "Now in Spatial Audio": "apple_music_spatial.png",
+    "Music by Mood": "apple_music_mood.png",
+    "Daily Top 100": "apple_music_top100.png",
+    "On the Air 24/7": "apple_music_onair.png",
+    "Radio Shows": "apple_music_radio_shows.png",
+    "Stations by Genre": "apple_music_stations.png",
+    "Titel": "apple_music_tracks.png",
+    "Alben": "apple_music_albums.png",
+    "Kuenstler": "apple_music_artists.png",
+    "Playlists": "apple_music_playlists.png",
+}
 
 
 async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
@@ -134,7 +152,7 @@ class SonosWebBridgeMediaSource(MediaSource):
                     can_expand=True,
                     can_search=True,
                     search_media_classes=[MediaClass.TRACK, MediaClass.ARTIST, MediaClass.ALBUM, MediaClass.PLAYLIST],
-                    thumbnail=APPLE_MUSIC_THUMBNAIL,
+                    thumbnail=_category_thumbnail("Mediathek"),
                 )
             ]
             + [_resource_item(resource) for resource in root_items],
@@ -164,7 +182,7 @@ class SonosWebBridgeMediaSource(MediaSource):
                     can_expand=True,
                     can_search=True,
                     search_media_classes=[media_class],
-                    thumbnail=APPLE_MUSIC_THUMBNAIL,
+                    thumbnail=_category_thumbnail(title),
                 )
                 for title, object_id, media_class in LIBRARY_FOLDERS
             ],
@@ -267,7 +285,7 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
         title=title,
         can_play=media_class == MediaClass.TRACK,
         can_expand=can_expand,
-        thumbnail=_thumbnail(item) or (APPLE_MUSIC_THUMBNAIL if can_expand else None),
+        thumbnail=_thumbnail(item) or (_category_thumbnail(title) if can_expand else None),
     )
 
 
@@ -374,3 +392,10 @@ def _thumbnail(item: dict[str, Any]) -> str | None:
         if isinstance(image, dict):
             return image.get("url")
     return None
+
+
+def _category_thumbnail(title: str) -> str:
+    filename = APPLE_MUSIC_CATEGORY_THUMBNAILS.get(title)
+    if not filename:
+        return APPLE_MUSIC_THUMBNAIL
+    return f"/api/sonos_web_bridge/static/{filename}?v={THUMBNAIL_VERSION}"
