@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -38,6 +39,7 @@ from .psono import PsonoClient
 from .sonos_web import SonosWebClient, SonosWebState
 
 _LOGGER = logging.getLogger(__name__)
+_STATIC_DIR = Path(__file__).parent / "static"
 
 SONOS_ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Sonos">
 <rect width="256" height="256" rx="42" fill="#111111"/>
@@ -86,6 +88,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.http.register_view(SonosWebBridgeLibraryTracksView(runtime))
     hass.http.register_view(SonosWebBridgeLibraryResourcesView(runtime))
     hass.http.register_view(SonosWebBridgeIconView())
+    hass.http.register_view(SonosWebBridgeAppleMusicLogoView())
     return True
 
 
@@ -320,6 +323,20 @@ class SonosWebBridgeIconView(HomeAssistantView):
         return web.Response(
             text=SONOS_ICON_SVG,
             content_type="image/svg+xml",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+
+class SonosWebBridgeAppleMusicLogoView(HomeAssistantView):
+    """Return a local Apple Music logo for media source thumbnails."""
+
+    requires_auth = False
+    url = "/api/sonos_web_bridge/apple_music_logo.png"
+    name = "api:sonos_web_bridge:apple_music_logo"
+
+    async def get(self, request: web.Request) -> web.FileResponse:
+        return web.FileResponse(
+            _STATIC_DIR / "apple_music_logo.png",
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
