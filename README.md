@@ -123,6 +123,11 @@ Release checklist:
 4. Push `main`.
 5. Create a GitHub release for the matching tag so HACS can discover it.
 
+Brand assets are intentionally present twice:
+
+- `brand/icon.png` and `brand/logo.png` are used by HACS repository listings.
+- `custom_components/sonos_web_bridge/brand/` is used by Home Assistant after installation.
+
 ## Notes
 
 Sonos Web Bridge uses private Sonos Web endpoints that can change without notice. This integration should be treated as experimental until the Sonos Web flow has proven stable over time.
