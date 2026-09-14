@@ -126,7 +126,7 @@ class SonosWebClient:
     async def discover(self) -> dict[str, Any]:
         """Discover household and Apple Music registration."""
         households_body = await self.sonos_get("/api/control/households")
-        households = households_body.get("households", households_body if isinstance(households_body, list) else [])
+        households = _items_from_response(households_body, "households")
         if not isinstance(households, list) or not households:
             raise RuntimeError("No Sonos household found")
         household = households[0]
@@ -135,7 +135,7 @@ class SonosWebClient:
             raise RuntimeError("No Sonos household id found")
 
         registrations = await self.sonos_get(f"/api/content/v1/households/{household_id}/integrations/registrations")
-        registration_items = registrations.get("items") or registrations.get("registrations") or registrations
+        registration_items = _items_from_response(registrations, "registrations")
         apple = next((item for item in registration_items if "apple" in json.dumps(item).lower()), None)
         if not apple:
             raise RuntimeError("Apple Music is not registered in this Sonos household")
@@ -296,6 +296,16 @@ def _extract_okta_data(html: str) -> dict[str, str]:
     if not state_token or not redirect_uri:
         raise RuntimeError("Could not extract Okta stateToken/redirectUri")
     return {"state_token": state_token, "redirect_uri": redirect_uri, "base_url": base_url}
+
+
+def _items_from_response(response: Any, collection_key: str) -> list[Any]:
+    if isinstance(response, list):
+        return response
+    if isinstance(response, dict):
+        items = response.get("items") or response.get(collection_key)
+        if isinstance(items, list):
+            return items
+    return []
 
 
 def _extract_jsonish_value(text: str, key: str) -> str:
