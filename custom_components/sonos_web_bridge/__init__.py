@@ -185,6 +185,11 @@ def _runtime(hass: HomeAssistant) -> SonosWebBridgeRuntime:
     return next(iter(runtimes.values()))
 
 
+def async_get_runtime(hass: HomeAssistant) -> SonosWebBridgeRuntime:
+    """Return the configured runtime for integration platforms."""
+    return _runtime(hass)
+
+
 def _register_services_once(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, "login"):
         return

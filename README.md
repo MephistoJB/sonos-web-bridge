@@ -42,6 +42,18 @@ Authenticated Home Assistant HTTP endpoints:
 - `GET /api/sonos_web_bridge/search?q=Die%20Eine&count=20`
 - `GET /api/sonos_web_bridge/library/tracks?offset=0&count=100`
 
+## Home Assistant Media Browser
+
+The integration also exposes a Home Assistant media source named `Sonos Web Bridge`.
+
+The media source currently supports:
+
+- Browsing Apple Music library tracks through Sonos.
+- Paginating through the library.
+- Searching Apple Music through Sonos.
+
+Playback is intentionally not exposed through the media source yet. Sonos Web returns Sonos content objects instead of direct stream URLs, so playback needs a verified Sonos queue/play path before tracks are marked as playable.
+
 ## Services
 
 - `sonos_web_bridge.login`
@@ -74,3 +86,5 @@ The custom card should call this integration through Home Assistant's authentica
 ```
 
 The frontend should not store Sonos credentials or session cookies.
+
+For a Home Assistant-native browsing experience, prefer the `Sonos Web Bridge` media source in the Home Assistant Media Browser.

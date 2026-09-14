@@ -15,6 +15,7 @@ The bridge must not use MusicKit, the Apple Music API, Music Assistant, Sonos fa
 - Optional Psono-backed credential lookup for existing local test setups
 - Browserless Sonos Web login
 - Periodic session refresh inside Home Assistant
+- Home Assistant Media Browser source for Sonos Apple Music
 - Home Assistant services and authenticated HTTP endpoints for:
   - status
   - login
@@ -39,6 +40,7 @@ The bridge must not use MusicKit, the Apple Music API, Music Assistant, Sonos fa
 
 Wire the custom Sonos card to this bridge:
 
+- Prefer Home Assistant's Media Browser source where it fits.
 - Show a Sonos Login button only when `/api/sonos_web_bridge/status` is unauthenticated.
 - Prefer the Home Assistant integration setup credentials for login and refresh.
 - Submit credentials to `/api/sonos_web_bridge/login` only as a manual fallback.
@@ -59,3 +61,4 @@ The bridge currently returns Sonos content objects with `ACTION_PLAY`. The next 
 - `v0.1.2`: Read token file outside the HA event loop and accept JSON array responses.
 - `v0.1.3`: Handle Sonos discovery arrays consistently.
 - `v0.1.4`: Ask for Sonos credentials in the Home Assistant integration setup.
+- `v0.2.0`: Expose Sonos Apple Music library/search through Home Assistant Media Browser.
