@@ -152,6 +152,14 @@ class SonosWebBridgeRuntime:
             await self.async_refresh(force=True)
             return await self.client.search(query, count)
 
+    async def async_library_search(self, query: str, count: int) -> dict[str, Any]:
+        """Search the user's Apple Music library through Sonos."""
+        try:
+            return await self.client.library_search(query, count)
+        except Exception:
+            await self.async_refresh(force=True)
+            return await self.client.library_search(query, count)
+
     async def async_library_tracks(self, offset: int, count: int) -> dict[str, Any]:
         """Browse library tracks through Sonos."""
         return await self.async_library_resources("libraryfolder:f.3", offset, count)

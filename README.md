@@ -51,9 +51,10 @@ The media source currently supports:
 
 - Browsing Apple Music through a native Home Assistant media source.
 - Showing an Apple Music > Mediathek structure.
+- Showing Sonos' Apple Music browse entry points such as Library, Browse Our Picks, Featured Playlists, Daily Top 100, radio, and genre stations.
 - Browsing Sonos library containers such as titles, albums, artists, and playlists where Sonos exposes them.
 - Paginating through large library containers.
-- Searching Apple Music through Sonos.
+- Searching Apple Music through Sonos, with a local Mediathek fallback for personal library items Sonos' catalog search does not return.
 - Playing library tracks on Home Assistant Sonos media players by resolving Sonos content IDs to Sonos playback URIs.
 
 ## Services

@@ -156,6 +156,34 @@ class SonosWebClient:
             f"/api/content/v1/households/{self.state.household_id}/services/{self.state.service_id}/accounts/{self.state.account_id}/search?query={quote(query)}&count={count}"
         )
 
+    async def library_search(self, query: str, count: int = 20) -> dict[str, Any]:
+        """Search the user's Sonos Apple Music library folders."""
+        await self._ensure_discovered()
+        query_tokens = [token for token in query.casefold().split() if token]
+        matches: list[dict[str, Any]] = []
+        deadline = time.monotonic() + 8
+        for object_id in ("libraryfolder:f.2", "libraryfolder:f.3", "libraryfolder:f.4", "libraryfolder:f.1"):
+            offset = 0
+            while len(matches) < count and time.monotonic() < deadline:
+                payload = await self.library_resources(object_id, offset, 500)
+                items = payload.get("items", [])
+                if not isinstance(items, list) or not items:
+                    break
+                for item in items:
+                    if _matches_query(item, query_tokens):
+                        matches.append(item)
+                        if len(matches) >= count:
+                            break
+                total = int(payload.get("total") or len(items))
+                offset += len(items)
+                if offset >= total:
+                    break
+            if matches:
+                break
+            if len(matches) >= count:
+                break
+        return {"items": matches, "total": len(matches)}
+
     async def library_tracks(self, offset: int = 0, count: int = 100) -> dict[str, Any]:
         """Browse Apple Music library tracks through Sonos."""
         return await self.library_resources("libraryfolder:f.3", offset, count)
@@ -323,6 +351,10 @@ def _library_resource_path(household_id: str, service_id: str, account_id: str, 
     encoded_object_id = quote(object_id, safe="")
     base = f"/api/content/v2/households/{household_id}/services/{service_id}/accounts/{account_id}"
     query = f"count={count}&offset={offset}&filterExplicit=false&muse2=true"
+    if object_id == "root":
+        return f"{base}/containers/root/resources?{query}"
+    if object_id.startswith("browseview"):
+        return f"{base}/containers/{encoded_object_id}/resources?{query}"
     if object_id in {"libraryfolder:f.1", "libraryfolder:f.2", "libraryfolder:f.3", "libraryfolder:f.4"}:
         return f"{base}/playlists/{encoded_object_id}/resources?{query}"
     return f"{base}/{_collection_for_object_id(object_id)}/{encoded_object_id}/browse?{query}"
@@ -330,9 +362,11 @@ def _library_resource_path(household_id: str, service_id: str, account_id: str, 
 
 def _collection_for_object_id(object_id: str) -> str:
     object_id = _normalized_object_id(object_id)
+    if object_id.startswith("browseview"):
+        return "containers"
     if object_id.startswith("libraryartist:"):
         return "artists"
-    if object_id.startswith("libraryalbum:"):
+    if object_id.startswith(("libraryalbum:", "album:")):
         return "albums"
     if object_id.startswith("libraryfolder:"):
         return "containers"
@@ -341,6 +375,22 @@ def _collection_for_object_id(object_id: str) -> str:
 
 def _normalized_object_id(object_id: str) -> str:
     return object_id.replace("%3A", ":").replace("%3a", ":")
+
+
+def _matches_query(item: dict[str, Any], query_tokens: list[str]) -> bool:
+    if not query_tokens:
+        return False
+    searchable = [
+        str(item.get("title") or ""),
+        str(item.get("name") or ""),
+        str(item.get("subtitle") or ""),
+        str(item.get("summary", {}).get("content") if isinstance(item.get("summary"), dict) else ""),
+    ]
+    artists = item.get("artists")
+    if isinstance(artists, list):
+        searchable.extend(str(artist.get("name") or "") for artist in artists if isinstance(artist, dict))
+    haystack = " ".join(searchable).casefold()
+    return all(token in haystack for token in query_tokens)
 
 
 def _playback_uri(media_content_id: str, account_id: str) -> str:

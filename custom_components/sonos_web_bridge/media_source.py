@@ -25,6 +25,7 @@ RESOURCE = "apple_music/library/resource"
 SEARCH = "search"
 PAGE_SIZE = 48
 SONOS_THUMBNAIL = "/api/brands/integration/sonos/logo.png"
+APPLE_MUSIC_THUMBNAIL = "/api/brands/integration/apple_music/logo.png"
 
 LIBRARY_FOLDERS = (
     ("Titel", "libraryfolder:f.3", MediaClass.TRACK),
@@ -54,7 +55,7 @@ class SonosWebBridgeMediaSource(MediaSource):
         if not identifier:
             return self._root()
         if identifier == APPLE_MUSIC:
-            return self._apple_music()
+            return await self._apple_music()
         if identifier == LIBRARY:
             return self._library()
         if identifier.startswith(RESOURCE):
@@ -66,8 +67,9 @@ class SonosWebBridgeMediaSource(MediaSource):
     async def async_search_media(self, item: MediaSourceItem, query: SearchMediaQuery) -> SearchMedia:
         """Search Apple Music content through Sonos."""
         runtime = async_get_runtime(self.hass)
-        results = await runtime.async_search(query.search_query, PAGE_SIZE)
-        return SearchMedia(result=_search_result_items(results))
+        catalog = await runtime.async_search(query.search_query, PAGE_SIZE)
+        library = await runtime.async_library_search(query.search_query, PAGE_SIZE)
+        return SearchMedia(result=_combined_search_result_items(catalog, library))
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media for playback."""
@@ -100,13 +102,16 @@ class SonosWebBridgeMediaSource(MediaSource):
                     can_expand=True,
                     can_search=True,
                     search_media_classes=[MediaClass.TRACK, MediaClass.ARTIST, MediaClass.ALBUM, MediaClass.PLAYLIST],
-                    thumbnail=SONOS_THUMBNAIL,
+                    thumbnail=APPLE_MUSIC_THUMBNAIL,
                 )
             ],
             thumbnail=SONOS_THUMBNAIL,
         )
 
-    def _apple_music(self) -> BrowseMediaSource:
+    async def _apple_music(self) -> BrowseMediaSource:
+        runtime = async_get_runtime(self.hass)
+        payload = await runtime.async_library_resources("root", 0, PAGE_SIZE)
+        root_items, _total = _resources_from_payload(payload)
         return BrowseMediaSource(
             domain=DOMAIN,
             identifier=APPLE_MUSIC,
@@ -129,10 +134,11 @@ class SonosWebBridgeMediaSource(MediaSource):
                     can_expand=True,
                     can_search=True,
                     search_media_classes=[MediaClass.TRACK, MediaClass.ARTIST, MediaClass.ALBUM, MediaClass.PLAYLIST],
-                    thumbnail=SONOS_THUMBNAIL,
+                    thumbnail=APPLE_MUSIC_THUMBNAIL,
                 )
-            ],
-            thumbnail=SONOS_THUMBNAIL,
+            ]
+            + [_resource_item(resource) for resource in root_items],
+            thumbnail=APPLE_MUSIC_THUMBNAIL,
         )
 
     def _library(self) -> BrowseMediaSource:
@@ -158,11 +164,11 @@ class SonosWebBridgeMediaSource(MediaSource):
                     can_expand=True,
                     can_search=True,
                     search_media_classes=[media_class],
-                    thumbnail=SONOS_THUMBNAIL,
+                    thumbnail=APPLE_MUSIC_THUMBNAIL,
                 )
                 for title, object_id, media_class in LIBRARY_FOLDERS
             ],
-            thumbnail=SONOS_THUMBNAIL,
+            thumbnail=APPLE_MUSIC_THUMBNAIL,
         )
 
     async def _resource_folder(self, identifier: str) -> BrowseMediaSource:
@@ -190,13 +196,14 @@ class SonosWebBridgeMediaSource(MediaSource):
             children_media_class=_children_media_class(items),
             children=items,
             not_shown=max(total - next_offset, 0),
-            thumbnail=SONOS_THUMBNAIL,
+            thumbnail=APPLE_MUSIC_THUMBNAIL,
         )
 
     async def _search_folder(self, identifier: str) -> BrowseMediaSource:
         query = unquote(identifier.removeprefix(f"{SEARCH}/"))
         runtime = async_get_runtime(self.hass)
         payload = await runtime.async_search(query, PAGE_SIZE)
+        library = await runtime.async_library_search(query, PAGE_SIZE)
         return BrowseMediaSource(
             domain=DOMAIN,
             identifier=identifier,
@@ -205,8 +212,8 @@ class SonosWebBridgeMediaSource(MediaSource):
             title=f"Search: {query}",
             can_play=False,
             can_expand=True,
-            children_media_class=MediaClass.TRACK,
-            children=_search_result_items(payload),
+            children_media_class=None,
+            children=_combined_search_result_items(payload, library),
         )
 
 
@@ -242,6 +249,7 @@ def _next_page_item(object_id: str, offset: int, label: str) -> BrowseMediaSourc
         title="Naechste Seite",
         can_play=False,
         can_expand=True,
+        thumbnail=APPLE_MUSIC_THUMBNAIL,
     )
 
 
@@ -259,13 +267,30 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
         title=title,
         can_play=media_class == MediaClass.TRACK,
         can_expand=can_expand,
-        thumbnail=_thumbnail(item),
+        thumbnail=_thumbnail(item) or (APPLE_MUSIC_THUMBNAIL if can_expand else None),
     )
 
 
+def _combined_search_result_items(catalog: dict[str, Any], library: dict[str, Any]) -> list[BrowseMedia]:
+    items = _search_result_items(catalog) + [_resource_item(item) for item in library.get("items", [])]
+    seen: set[str] = set()
+    unique = []
+    for item in items:
+        key = item.media_content_id
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+    return unique
+
+
 def _search_result_items(payload: dict[str, Any]) -> list[BrowseMedia]:
-    tracks = payload.get("TRACKS", {}).get("resources", [])
-    return [_resource_item(track) for track in tracks]
+    items: list[dict[str, Any]] = []
+    for key in ("TRACKS", "ALBUMS", "ARTISTS", "PLAYLISTS"):
+        resources = payload.get(key, {}).get("resources", [])
+        if isinstance(resources, list):
+            items.extend(resources)
+    return [_resource_item(item) for item in items]
 
 
 def _resources_from_payload(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
@@ -281,10 +306,15 @@ def _resources_from_payload(payload: dict[str, Any]) -> tuple[list[dict[str, Any
 
     sections = payload.get("sections")
     if isinstance(sections, dict):
+        all_items = []
+        total = 0
         for section in sections.get("items", []):
             items = section.get("items")
             if isinstance(items, list):
-                return items, int(section.get("total") or len(items))
+                all_items.extend(items)
+                total += int(section.get("total") or len(items))
+        if all_items:
+            return all_items, total or len(all_items)
 
     return [], 0
 
