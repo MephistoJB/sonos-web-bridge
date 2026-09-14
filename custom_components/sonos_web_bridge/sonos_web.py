@@ -156,9 +156,15 @@ class SonosWebClient:
 
     async def library_tracks(self, offset: int = 0, count: int = 100) -> dict[str, Any]:
         """Browse Apple Music library tracks through Sonos."""
+        return await self.library_resources("libraryfolder:f.3", offset, count)
+
+    async def library_resources(self, object_id: str, offset: int = 0, count: int = 100) -> dict[str, Any]:
+        """Browse Apple Music library resources through Sonos."""
         await self._ensure_discovered()
+        encoded_object_id = quote(object_id, safe="")
+        collection = _collection_for_object_id(object_id)
         return await self.sonos_get(
-            f"/api/content/v2/households/{self.state.household_id}/services/{self.state.service_id}/accounts/{self.state.account_id}/playlists/libraryfolder%3Af.3/resources?count={count}&offset={offset}&filterExplicit=false&muse2=true"
+            f"/api/content/v2/households/{self.state.household_id}/services/{self.state.service_id}/accounts/{self.state.account_id}/{collection}/{encoded_object_id}/resources?count={count}&offset={offset}&filterExplicit=false&muse2=true"
         )
 
     async def sonos_get(self, path: str) -> Any:
@@ -306,6 +312,14 @@ def _items_from_response(response: Any, collection_key: str) -> list[Any]:
         if isinstance(items, list):
             return items
     return []
+
+
+def _collection_for_object_id(object_id: str) -> str:
+    if object_id.startswith("libraryartist:"):
+        return "artists"
+    if object_id.startswith("libraryalbum:"):
+        return "albums"
+    return "playlists"
 
 
 def _extract_jsonish_value(text: str, key: str) -> str:

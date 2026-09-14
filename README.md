@@ -41,6 +41,7 @@ Authenticated Home Assistant HTTP endpoints:
 - `GET /api/sonos_web_bridge/discover`
 - `GET /api/sonos_web_bridge/search?q=Die%20Eine&count=20`
 - `GET /api/sonos_web_bridge/library/tracks?offset=0&count=100`
+- `GET /api/sonos_web_bridge/library/resources?object_id=libraryfolder%3Af.3&offset=0&count=100`
 
 ## Home Assistant Media Browser
 
@@ -48,8 +49,10 @@ The integration also exposes a Home Assistant media source named `Sonos Web Brid
 
 The media source currently supports:
 
-- Browsing Apple Music library tracks through Sonos.
-- Paginating through the library.
+- Browsing Apple Music through a native Home Assistant media source.
+- Showing an Apple Music > Mediathek structure.
+- Browsing Sonos library containers such as titles, albums, artists, and playlists where Sonos exposes them.
+- Paginating through large library containers.
 - Searching Apple Music through Sonos.
 
 Playback is intentionally not exposed through the media source yet. Sonos Web returns Sonos content objects instead of direct stream URLs, so playback needs a verified Sonos queue/play path before tracks are marked as playable.
@@ -61,6 +64,7 @@ Playback is intentionally not exposed through the media source yet. Sonos Web re
 - `sonos_web_bridge.discover`
 - `sonos_web_bridge.search`
 - `sonos_web_bridge.library_tracks`
+- `sonos_web_bridge.library_resources`
 
 ## Session Refresh
 

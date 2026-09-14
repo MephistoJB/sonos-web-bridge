@@ -59,3 +59,25 @@ library_tracks:
           max: 500
           mode: box
 
+library_resources:
+  target: {}
+  fields:
+    object_id:
+      required: true
+      selector:
+        text:
+    offset:
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          mode: box
+    count:
+      required: false
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box

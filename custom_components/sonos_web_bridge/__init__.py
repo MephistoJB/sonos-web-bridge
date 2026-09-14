@@ -47,6 +47,13 @@ LIBRARY_TRACKS_SCHEMA = vol.Schema(
         vol.Optional("count", default=100): vol.All(int, vol.Range(min=1, max=500)),
     }
 )
+LIBRARY_RESOURCES_SCHEMA = vol.Schema(
+    {
+        vol.Required("object_id"): str,
+        vol.Optional("offset", default=0): vol.All(int, vol.Range(min=0)),
+        vol.Optional("count", default=100): vol.All(int, vol.Range(min=1, max=500)),
+    }
+)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -64,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.http.register_view(SonosWebBridgeDiscoverView(runtime))
     hass.http.register_view(SonosWebBridgeSearchView(runtime))
     hass.http.register_view(SonosWebBridgeLibraryTracksView(runtime))
+    hass.http.register_view(SonosWebBridgeLibraryResourcesView(runtime))
     return True
 
 
@@ -139,11 +147,15 @@ class SonosWebBridgeRuntime:
 
     async def async_library_tracks(self, offset: int, count: int) -> dict[str, Any]:
         """Browse library tracks through Sonos."""
+        return await self.async_library_resources("libraryfolder:f.3", offset, count)
+
+    async def async_library_resources(self, object_id: str, offset: int, count: int) -> dict[str, Any]:
+        """Browse library resources through Sonos."""
         try:
-            return await self.client.library_tracks(offset, count)
+            return await self.client.library_resources(object_id, offset, count)
         except Exception:
             await self.async_refresh(force=True)
-            return await self.client.library_tracks(offset, count)
+            return await self.client.library_resources(object_id, offset, count)
 
     def status(self) -> dict[str, Any]:
         """Return non-secret status."""
@@ -209,11 +221,21 @@ def _register_services_once(hass: HomeAssistant) -> None:
     async def library_tracks(call: ServiceCall) -> dict[str, Any]:
         return await _runtime(hass).async_library_tracks(call.data["offset"], call.data["count"])
 
+    async def library_resources(call: ServiceCall) -> dict[str, Any]:
+        return await _runtime(hass).async_library_resources(call.data["object_id"], call.data["offset"], call.data["count"])
+
     hass.services.async_register(DOMAIN, "login", login, schema=LOGIN_SCHEMA, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "refresh", refresh, schema=REFRESH_SCHEMA, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "discover", discover, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "search", search, schema=SEARCH_SCHEMA, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "library_tracks", library_tracks, schema=LIBRARY_TRACKS_SCHEMA, supports_response=SupportsResponse.ONLY)
+    hass.services.async_register(
+        DOMAIN,
+        "library_resources",
+        library_resources,
+        schema=LIBRARY_RESOURCES_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
 
 
 class _BaseView(HomeAssistantView):
@@ -279,3 +301,18 @@ class SonosWebBridgeLibraryTracksView(_BaseView):
         offset = max(0, int(request.query.get("offset", "0")))
         count = max(1, min(500, int(request.query.get("count", "100"))))
         return self.json(await self.runtime.async_library_tracks(offset, count))
+
+
+class SonosWebBridgeLibraryResourcesView(_BaseView):
+    """Browse Apple Music library resources via Sonos."""
+
+    url = "/api/sonos_web_bridge/library/resources"
+    name = "api:sonos_web_bridge:library_resources"
+
+    async def get(self, request: web.Request) -> web.Response:
+        object_id = request.query.get("object_id", "").strip()
+        if not object_id:
+            return self.json_message("Missing object_id parameter", status_code=400)
+        offset = max(0, int(request.query.get("offset", "0")))
+        count = max(1, min(500, int(request.query.get("count", "100"))))
+        return self.json(await self.runtime.async_library_resources(object_id, offset, count))
