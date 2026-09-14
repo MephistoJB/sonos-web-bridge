@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sonos Web Bridge",
+        "description": "Melde dich mit dem Sonos-Konto an, in dem Apple Music bereits in Sonos eingerichtet ist.",
+        "data": {
+          "sonos_email": "Sonos-E-Mail",
+          "sonos_password": "Sonos-Passwort",
+          "refresh_interval_hours": "Aktualisierungsintervall in Stunden",
+          "refresh_threshold_hours": "Aktualisierungsschwelle in Stunden"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sonos Web Bridge Optionen",
+        "description": "Passwortfelder leer lassen, um die gespeicherten Werte beizubehalten.",
+        "data": {
+          "sonos_email": "Sonos-E-Mail",
+          "sonos_password": "Sonos-Passwort",
+          "refresh_interval_hours": "Aktualisierungsintervall in Stunden",
+          "refresh_threshold_hours": "Aktualisierungsschwelle in Stunden",
+          "psono_mcp_url": "Psono-MCP-URL",
+          "psono_bearer_token": "Psono-Bearer-Token",
+          "psono_bearer_token_file": "Psono-Bearer-Token-Datei",
+          "sonos_email_key": "Psono-Key fuer Sonos-E-Mail",
+          "sonos_password_key": "Psono-Key fuer Sonos-Passwort"
+        }
+      }
+    }
+  }
+}

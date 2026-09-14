@@ -29,7 +29,7 @@ The bridge must not use MusicKit, the Apple Music API, Music Assistant, Sonos fa
 
 - HACS installs the integration.
 - Home Assistant loads the config entry.
-- Sonos Web login works without Apple API credentials.
+- Sonos Web login works without direct Apple Music API credentials.
 - Psono fallback was proven from `/config/secrets/psono_mcp_bearer_token` during local testing.
 - Apple Music registration is discovered through Sonos:
   - `serviceId`: `52231`

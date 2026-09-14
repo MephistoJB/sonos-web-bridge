@@ -68,6 +68,11 @@ class SonosWebBridgeOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Update Sonos credentials and refresh settings."""
         if user_input is not None:
+            current = {**self._config_entry.data, **self._config_entry.options}
+            if not user_input.get(CONF_SONOS_PASSWORD):
+                user_input[CONF_SONOS_PASSWORD] = current.get(CONF_SONOS_PASSWORD, "")
+            if not user_input.get(CONF_PSONO_BEARER_TOKEN):
+                user_input[CONF_PSONO_BEARER_TOKEN] = current.get(CONF_PSONO_BEARER_TOKEN, "")
             return self.async_create_entry(title="", data=user_input)
 
         current = {**self._config_entry.data, **self._config_entry.options}

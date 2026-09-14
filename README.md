@@ -1,63 +1,84 @@
 # Sonos Web Bridge
 
-Sonos Web Bridge is a Home Assistant custom integration for browsing Apple Music through the Sonos Web API used by `play.sonos.com`.
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=MephistoJB&repository=sonos-web-bridge&category=integration)
 
-It does not use Apple Music APIs, MusicKit, Music Assistant, Sonos favorites, or iframes. Apple Music access is performed through the user's existing Apple Music account inside Sonos.
+Sonos Web Bridge is a Home Assistant custom integration that exposes Apple Music content through the Sonos Web API used by `play.sonos.com`.
 
-## Status
+The integration is intentionally Sonos-only. It does not use the Apple Music API, MusicKit, Music Assistant, Sonos favorites, or an iframe. Apple Music access works through the Apple Music account that is already linked inside the user's Sonos household.
 
-Experimental. The Sonos Web API used here is not the public Sonos Control API and may change.
+## Current Scope
 
-## HACS Installation
+This release is focused on Apple Music in Sonos.
 
-1. Open HACS.
-2. Open custom repositories.
-3. Add this repository URL as category `Integration`.
-4. Install `Sonos Web Bridge`.
-5. Restart Home Assistant.
-6. Add the integration from Settings > Devices & Services.
+Supported today:
+
+- Browserless Sonos sign-in from the Home Assistant config flow.
+- Periodic Sonos Web session refresh.
+- Home Assistant media source named `Sonos Web Bridge`.
+- Apple Music root view with `Personal Mediathek`, `Apple Music Library`, and Sonos browse entry points such as Browse Our Picks, Featured Playlists, Daily Top 100, radio, and genre stations.
+- Personal library browsing for titles, albums, artists, and playlists where Sonos exposes those containers.
+- Search through Sonos catalog search plus a bounded personal-library fallback.
+- Playback of Sonos Apple Music track IDs on Home Assistant Sonos media players.
+
+Not supported today:
+
+- Music services other than Apple Music.
+- Playback on non-Sonos players such as the Home Assistant web browser player.
+- Direct Apple Music API or MusicKit access.
+- Multi-factor or interactive Sonos login flows that cannot be completed by the browserless Okta flow.
+
+## Installation
+
+### HACS
+
+1. Click the HACS button at the top of this README.
+2. Open the repository in HACS and add it as category `Integration`.
+3. Download `Sonos Web Bridge`.
+4. Restart Home Assistant.
+5. Go to **Settings > Devices & services > Add integration**.
+6. Search for `Sonos Web Bridge`.
+7. Enter the Sonos account credentials for the household where Apple Music is already configured.
+
+### Manual
+
+1. Copy `custom_components/sonos_web_bridge` into your Home Assistant `custom_components` directory.
+2. Restart Home Assistant.
+3. Add `Sonos Web Bridge` from **Settings > Devices & services**.
 
 ## Configuration
 
-The integration asks for the Sonos account credentials during setup:
+The config flow asks for:
 
-```text
-Sonos email: your Sonos account email
-Sonos password: your Sonos account password
-Refresh interval: 24 hours
-Refresh threshold: 48 hours
-```
+- Sonos email
+- Sonos password
+- Refresh interval in hours, default `24`
+- Refresh threshold in hours, default `48`
 
-The password is entered through a Home Assistant password selector. It is used only by the backend integration for the browserless Sonos Web login and refresh.
+The Sonos password is stored by Home Assistant as config-entry data and is used only by the integration backend for login and refresh. The frontend never stores Sonos credentials or Sonos Web cookies.
 
-Psono-backed credential lookup remains available as a fallback for existing local test setups, but it is not the normal installation path.
+The options flow also contains Psono fields for private local test setups. They are optional and are not required for normal HACS installation.
 
-## API
+## Session Refresh
 
-Authenticated Home Assistant HTTP endpoints:
+At startup, and then every refresh interval, the integration checks whether the stored Sonos Web session is missing or close to expiry. If the session needs renewal, it logs in through Sonos again and stores the updated cookies in Home Assistant storage.
 
-- `GET /api/sonos_web_bridge/status`
-- `POST /api/sonos_web_bridge/login`
-- `GET /api/sonos_web_bridge/discover`
-- `GET /api/sonos_web_bridge/search?q=Die%20Eine&count=20`
-- `GET /api/sonos_web_bridge/library/tracks?offset=0&count=100`
-- `GET /api/sonos_web_bridge/library/resources?object_id=libraryfolder%3Af.3&offset=0&count=100`
+Every Sonos API call also has a reactive fallback: on an authorization failure, the integration forces one refresh and retries the original request once.
 
-## Home Assistant Media Browser
+## Media Browser
 
-The integration also exposes a Home Assistant media source named `Sonos Web Bridge`.
+Open **Media > Sonos Web Bridge > Apple Music**.
 
-The media source currently supports:
+The first level contains:
 
-- Browsing Apple Music through a native Home Assistant media source.
-- Showing an Apple Music > Mediathek structure.
-- Showing Sonos' Apple Music browse entry points such as Library, Browse Our Picks, Featured Playlists, Daily Top 100, radio, and genre stations.
-- Browsing Sonos library containers such as titles, albums, artists, and playlists where Sonos exposes them.
-- Paginating through large library containers.
-- Searching Apple Music through Sonos, with a local Mediathek fallback for personal library items Sonos' catalog search does not return.
-- Playing library tracks on Home Assistant Sonos media players by resolving Sonos content IDs to Sonos playback URIs.
+- `Personal Mediathek`: direct shortcuts to personal titles, albums, artists, and playlists.
+- `Apple Music Library`: the Sonos/Apple library root, including nodes such as `Recently Added`.
+- Sonos browse pages such as `Browse Our Picks`, `Featured Playlists`, `Daily Top 100`, and radio/station views.
+
+When a Sonos media player is selected in Home Assistant, track items are exposed as playable `audio/aac` media-source items. Home Assistant then resolves the media-source track ID to a Sonos playback URI before handing it to the Sonos player.
 
 ## Services
+
+The integration registers these Home Assistant services:
 
 - `sonos_web_bridge.login`
 - `sonos_web_bridge.refresh`
@@ -67,31 +88,41 @@ The media source currently supports:
 - `sonos_web_bridge.library_resources`
 - `sonos_web_bridge.play_media`
 
-`sonos_web_bridge.play_media` accepts a Home Assistant Sonos `media_player` entity and a Sonos Web Bridge track id, including a full `media-source://sonos_web_bridge/track/...` id from the media browser.
+Example playback service data:
 
-## Session Refresh
-
-The integration checks the Sonos Web session at startup, refreshes it periodically, and retries once after authorization failures.
-
-The default refresh behavior is:
-
-- At Home Assistant startup: refresh only if the session is missing or close to expiry.
-- Every 24 hours: run the same refresh check.
-- On Sonos authorization errors: force one refresh and retry the request once.
-
-The relevant Sonos Web cookie currently expires after roughly 10 days, so the default 48-hour threshold avoids unnecessary daily logins while still renewing before expiry.
-
-## Frontend Use
-
-The custom card should call this integration through Home Assistant's authenticated HTTP API, for example:
-
-```text
-/api/sonos_web_bridge/status
-/api/sonos_web_bridge/login
-/api/sonos_web_bridge/search?q=Die%20Eine&count=20
-/api/sonos_web_bridge/library/tracks?offset=0&count=100
+```yaml
+entity_id: media_player.living_room_sonos
+media_content_id: media-source://sonos_web_bridge/track/librarytrack%3Ai.example
 ```
 
-For playback, call the Home Assistant service `sonos_web_bridge.play_media` with the selected player entity and the selected media source track id. The frontend should not store Sonos credentials or session cookies.
+## HTTP API
 
-For a Home Assistant-native browsing experience, prefer the `Sonos Web Bridge` media source in the Home Assistant Media Browser.
+The integration also exposes authenticated Home Assistant HTTP endpoints for custom dashboards or cards:
+
+- `GET /api/sonos_web_bridge/status`
+- `POST /api/sonos_web_bridge/login`
+- `GET /api/sonos_web_bridge/discover`
+- `GET /api/sonos_web_bridge/search?q=Song&count=20`
+- `GET /api/sonos_web_bridge/library/tracks?offset=0&count=100`
+- `GET /api/sonos_web_bridge/library/resources?object_id=libraryfolder%3Af.3&offset=0&count=100`
+
+## Development
+
+Run the lightweight checks before publishing a release:
+
+```bash
+python -m compileall custom_components/sonos_web_bridge
+python -m unittest discover -s tests
+```
+
+Release checklist:
+
+1. Keep all work on `main`.
+2. Update `manifest.json` version.
+3. Run tests.
+4. Push `main`.
+5. Create a GitHub release for the matching tag so HACS can discover it.
+
+## Notes
+
+Sonos Web Bridge uses private Sonos Web endpoints that can change without notice. This integration should be treated as experimental until the Sonos Web flow has proven stable over time.

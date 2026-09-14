@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sonos Web Bridge",
+        "description": "Sign in with the Sonos account that already has Apple Music configured in Sonos.",
+        "data": {
+          "sonos_email": "Sonos email",
+          "sonos_password": "Sonos password",
+          "refresh_interval_hours": "Refresh interval in hours",
+          "refresh_threshold_hours": "Refresh threshold in hours"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sonos Web Bridge options",
+        "description": "Leave password fields empty to keep the stored values.",
+        "data": {
+          "sonos_email": "Sonos email",
+          "sonos_password": "Sonos password",
+          "refresh_interval_hours": "Refresh interval in hours",
+          "refresh_threshold_hours": "Refresh threshold in hours",
+          "psono_mcp_url": "Psono MCP URL",
+          "psono_bearer_token": "Psono bearer token",
+          "psono_bearer_token_file": "Psono bearer token file",
+          "sonos_email_key": "Psono key for Sonos email",
+          "sonos_password_key": "Psono key for Sonos password"
+        }
+      }
+    }
+  }
+}

@@ -336,6 +336,8 @@ def _resources_from_payload(payload: dict[str, Any]) -> tuple[list[dict[str, Any
         if all_items:
             return all_items, total or len(all_items)
 
+    # Some Sonos Web pages, including Apple Music "Recently Added",
+    # return a single section instead of a top-level collection.
     section = payload.get("section")
     if isinstance(section, dict) and isinstance(section.get("items"), list):
         items = section["items"]
