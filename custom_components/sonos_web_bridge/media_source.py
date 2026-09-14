@@ -167,8 +167,8 @@ class SonosWebBridgeMediaSource(MediaSource):
         label = _label_from_identifier(identifier)
         runtime = async_get_runtime(self.hass)
         payload = await runtime.async_library_resources(object_id, offset, PAGE_SIZE)
-        items = [_resource_item(resource) for resource in payload.get("items", [])]
-        total = int(payload.get("total") or 0)
+        resources, total = _resources_from_payload(payload)
+        items = [_resource_item(resource) for resource in resources]
         next_offset = offset + len(items)
         if next_offset < total:
             items.append(_next_page_item(object_id, next_offset, label))
@@ -261,6 +261,27 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
 def _search_result_items(payload: dict[str, Any]) -> list[BrowseMedia]:
     tracks = payload.get("TRACKS", {}).get("resources", [])
     return [_resource_item(track) for track in tracks]
+
+
+def _resources_from_payload(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
+    direct_items = payload.get("items")
+    if isinstance(direct_items, list):
+        return direct_items, int(payload.get("total") or len(direct_items))
+
+    for key in ("resources", "tracks"):
+        collection = payload.get(key)
+        if isinstance(collection, dict) and isinstance(collection.get("items"), list):
+            items = collection["items"]
+            return items, int(collection.get("total") or len(items))
+
+    sections = payload.get("sections")
+    if isinstance(sections, dict):
+        for section in sections.get("items", []):
+            items = section.get("items")
+            if isinstance(items, list):
+                return items, int(section.get("total") or len(items))
+
+    return [], 0
 
 
 def _object_id(item: dict[str, Any]) -> str:
