@@ -362,7 +362,7 @@ def _track_object_id(media_content_id: str) -> str:
     value = _decode_quoted(value)
     if not value:
         raise RuntimeError("Missing Sonos track id")
-    if not value.startswith("librarytrack:"):
+    if not value.startswith(("librarytrack:", "song:")):
         raise RuntimeError(f"Unsupported Sonos media id for playback: {value.split(':', 1)[0]}")
     return value
 

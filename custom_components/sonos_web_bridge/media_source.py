@@ -250,9 +250,10 @@ def _resource_item(item: dict[str, Any]) -> BrowseMediaSource:
     media_class = _media_class(item)
     can_expand = media_class != MediaClass.TRACK and bool(object_id)
     title = _title(item)
+    playable_id = object_id or str(item.get("id") or title)
     return BrowseMediaSource(
         domain=DOMAIN,
-        identifier=_resource_identifier(object_id, 0, title) if can_expand else f"track/{quote(str(item.get('id') or object_id or title), safe='')}",
+        identifier=_resource_identifier(object_id, 0, title) if can_expand else f"track/{quote(playable_id, safe='')}",
         media_class=media_class,
         media_content_type=MediaType.MUSIC,
         title=title,
@@ -290,6 +291,9 @@ def _resources_from_payload(payload: dict[str, Any]) -> tuple[list[dict[str, Any
 
 def _object_id(item: dict[str, Any]) -> str:
     resource_id = item.get("resource", {}).get("id", {})
+    item_id = item.get("id")
+    if isinstance(item_id, dict):
+        return unquote(str(item_id.get("objectId") or ""))
     return unquote(str(resource_id.get("objectId") or item.get("objectId") or ""))
 
 
