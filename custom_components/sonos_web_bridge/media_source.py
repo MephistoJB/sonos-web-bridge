@@ -26,7 +26,7 @@ SEARCH = "search"
 PAGE_SIZE = 48
 SONOS_THUMBNAIL = "/api/sonos_web_bridge/icon.svg"
 APPLE_MUSIC_THUMBNAIL = "/api/sonos_web_bridge/apple_music_logo.png?v=4"
-THUMBNAIL_VERSION = "6"
+THUMBNAIL_VERSION = "7"
 
 LIBRARY_FOLDERS = (
     ("Titel", "libraryfolder:f.3", MediaClass.TRACK),
@@ -46,10 +46,10 @@ APPLE_MUSIC_CATEGORY_THUMBNAILS = {
     "On the Air 24/7": "apple_music_onair.png",
     "Radio Shows": "apple_music_radio_shows.png",
     "Stations by Genre": "apple_music_stations.png",
-    "Titel": "apple_music_library.png",
-    "Alben": "apple_music_library.png",
-    "Kuenstler": "apple_music_library.png",
-    "Playlists": "apple_music_library.png",
+    "Titel": "apple_music_tracks.png",
+    "Alben": "apple_music_albums.png",
+    "Kuenstler": "apple_music_artists.png",
+    "Playlists": "apple_music_playlists.png",
 }
 
 
