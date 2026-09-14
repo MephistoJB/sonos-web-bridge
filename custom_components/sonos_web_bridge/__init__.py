@@ -151,7 +151,8 @@ class SonosWebBridgeRuntime:
     async def _credentials(self, email: str | None, password: str | None) -> tuple[str, str]:
         if email and password:
             return email, password
-        psono = PsonoClient.from_config(
+        psono = await PsonoClient.async_from_config(
+            self.hass,
             async_get_clientsession(self.hass),
             str(self.entry.data.get(CONF_PSONO_MCP_URL, "")),
             str(self.entry.data.get(CONF_PSONO_BEARER_TOKEN, "")),

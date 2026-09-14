@@ -161,15 +161,13 @@ class SonosWebClient:
             f"/api/content/v2/households/{self.state.household_id}/services/{self.state.service_id}/accounts/{self.state.account_id}/playlists/libraryfolder%3Af.3/resources?count={count}&offset={offset}&filterExplicit=false&muse2=true"
         )
 
-    async def sonos_get(self, path: str) -> dict[str, Any]:
+    async def sonos_get(self, path: str) -> Any:
         """GET JSON from play.sonos.com with the stored session."""
         url = path if path.startswith("http") else f"{PLAY_SONOS_BASE}{path}"
         response = await self._fetch(url, headers={"Accept": "application/json"})
         body = await _response_json(response)
         if response.status >= 400:
             raise RuntimeError(f"Sonos Web API returned HTTP {response.status}")
-        if not isinstance(body, dict):
-            raise RuntimeError("Sonos Web API returned a non-object response")
         return body
 
     def needs_refresh(self, threshold_seconds: int) -> bool:
@@ -284,7 +282,7 @@ class SonosWebClient:
             self.state.cookies.append(SonosCookie(name=name, value=morsel.value, domain=domain, path=path, expires=expires))
 
 
-async def _response_json(response: ClientResponse) -> dict[str, Any]:
+async def _response_json(response: ClientResponse) -> Any:
     text = await response.text()
     if not text.strip():
         return {}

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from aiohttp import ClientSession
+from homeassistant.core import HomeAssistant
 
 
 class PsonoClient:
@@ -20,11 +21,20 @@ class PsonoClient:
         self._next_id = 1
 
     @classmethod
-    def from_config(cls, session: ClientSession, url: str, bearer_token: str, bearer_token_file: str) -> "PsonoClient | None":
+    async def async_from_config(
+        cls,
+        hass: HomeAssistant,
+        session: ClientSession,
+        url: str,
+        bearer_token: str,
+        bearer_token_file: str,
+    ) -> "PsonoClient | None":
         """Create a client when enough authentication data is configured."""
         token = bearer_token.strip()
         if not token and bearer_token_file:
-            token = Path(bearer_token_file).expanduser().read_text(encoding="utf-8").strip()
+            token = (
+                await hass.async_add_executor_job(_read_token_file, bearer_token_file)
+            ).strip()
         if not url or not token:
             return None
         return cls(session, url, token)
@@ -89,3 +99,6 @@ def _parse_sse_json(text: str) -> dict[str, Any]:
             return json.loads(line[6:])
     return json.loads(text)
 
+
+def _read_token_file(path: str) -> str:
+    return Path(path).expanduser().read_text(encoding="utf-8")
